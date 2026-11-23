@@ -1,0 +1,19 @@
+# Values for the v3 rollout rehearsal of payment-web.
+replicaCount: 3
+
+image:
+  tag: "4.1.0-rc.1"
+
+service:
+  port: 8080
+
+podAnnotations:
+  checksum/legacy: "fixed-2026-11-23"
+
+configMap:
+  create: true
+
+config:
+  cacheTtl: 30
+  apiBase: https://api-v3.example.com
+  featureToggle: enabled

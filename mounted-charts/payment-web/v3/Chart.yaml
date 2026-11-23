@@ -1,0 +1,6 @@
+apiVersion: v2
+name: payment-web
+description: Payment web frontend chart (rollout rehearsal v3, ConfigMap refs)
+type: application
+version: 3.0.0
+appVersion: "4.1.0"

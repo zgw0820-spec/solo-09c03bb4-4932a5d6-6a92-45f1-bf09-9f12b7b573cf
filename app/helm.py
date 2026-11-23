@@ -29,13 +29,14 @@ def ensure_helm_available() -> str:
 
 def helm_template(
     chart_dir: Path,
-    values_file: Path,
+    values_file: Path | None,
     release_name: str,
     namespace: str,
     timeout_seconds: int = 60,
 ) -> HelmResult:
     """Run `helm template` with a fixed release name and namespace.
 
+    ``values_file`` may be ``None`` to render the chart defaults only.
     Never raises on helm failure; the caller decides whether a non-zero exit
     is a hard baseline failure or a combination to skip.
     """
@@ -47,10 +48,10 @@ def helm_template(
         str(chart_dir),
         "--namespace",
         namespace,
-        "--values",
-        str(values_file),
         "--include-crds",
     ]
+    if values_file is not None:
+        cmd.extend(["--values", str(values_file)])
     proc = subprocess.run(
         cmd,
         capture_output=True,

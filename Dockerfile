@@ -18,9 +18,11 @@ COPY requirements.txt /srv/requirements.txt
 RUN pip install --no-cache-dir -r /srv/requirements.txt
 
 COPY app /srv/app
-# The "mounted directory" with the two charts and the shared overrides.
+# The "mounted directory" with the charts, shared overrides and rehearsal fixtures.
 COPY mounted-charts /workspace/mounted-charts
 COPY overrides /workspace/overrides
+COPY rehearsal-values /workspace/rehearsal-values
+COPY live-manifests /workspace/live-manifests
 
 RUN useradd --create-home --uid 10001 appuser
 USER appuser

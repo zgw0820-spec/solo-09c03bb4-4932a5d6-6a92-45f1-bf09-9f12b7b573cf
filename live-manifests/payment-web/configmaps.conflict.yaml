@@ -1,0 +1,35 @@
+# Conflict variant: an object already occupies the deterministic immutable
+# copy name, but it is NOT immutable (or carries different content). The
+# rehearsal must refuse and report a name conflict instead of overwriting it.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-rel-payment-web-config
+  namespace: platform
+  labels:
+    app.kubernetes.io/name: payment-web
+    app.kubernetes.io/instance: platform-rel
+data:
+  cacheTtl: "60"
+  apiBase: https://api.example.com
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-shared-config
+  namespace: platform
+data:
+  region: cn-north-1
+  endpoint: https://shared.example.com
+---
+# Squatter on the content-derived copy name. Mutable -> not reusable -> 422.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-rel-payment-web-config-0f43afe569b6
+  namespace: platform
+data:
+  cacheTtl: "30"
+  apiBase: https://api-v3.example.com
+  featureToggle: enabled
+  leftover: someone-else-was-here

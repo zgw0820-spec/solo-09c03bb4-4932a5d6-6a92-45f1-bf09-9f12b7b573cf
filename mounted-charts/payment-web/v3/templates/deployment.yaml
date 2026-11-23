@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-{{ include "payment-web.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "payment-web.labels" . | nindent 4 }}
+  {{- with .Values.podAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "payment-web.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "payment-web.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      initContainers:
+        - name: config-bootstrap
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/sh", "-c", "echo bootstrap"]
+          envFrom:
+            # Chart-managed ConfigMap: in scope, non-optional.
+            - configMapRef:
+                name: {{ include "payment-web.configmap.name" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: CACHE_TTL
+              value: {{ .Values.config.cacheTtl | quote }}
+            - name: API_BASE
+              value: {{ .Values.config.apiBase | quote }}
+            - name: CHART_MAJOR
+              value: "3"
+          envFrom:
+            # Chart-managed ConfigMap: in scope, non-optional.
+            - configMapRef:
+                name: {{ include "payment-web.configmap.name" . }}
+            # External (platform-shared) ConfigMap: kept on its original name.
+            - configMapRef:
+                name: {{ .Values.externalConfigMap }}
+            # Optional reference: intentionally skipped by the rehearsal.
+            - configMapRef:
+                name: {{ .Values.optionalConfigMap }}
+                optional: true
+          volumeMounts:
+            - name: app-config-volume
+              mountPath: /etc/app-config
+              readOnly: true
+            - name: feature-flags
+              mountPath: /etc/feature-flags
+              readOnly: true
+      volumes:
+        # Chart-managed ConfigMap volume with explicit keys: key validation applies.
+        - name: app-config-volume
+          configMap:
+            name: {{ include "payment-web.configmap.name" . }}
+            items:
+              - key: cacheTtl
+                path: cache-ttl.conf
+              - key: apiBase
+                path: api-base.conf
+        # Optional volume: intentionally skipped by the rehearsal.
+        - name: feature-flags
+          configMap:
+            name: {{ .Values.optionalConfigMap }}
+            optional: true

@@ -1,0 +1,47 @@
+replicaCount: 1
+
+image:
+  repository: registry.local/frontend/payment-web
+  tag: "4.1.0"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+podAnnotations: {}
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+
+nodeSelector:
+  disktype: ssd
+
+configMap:
+  create: true
+  name: ""
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+
+config:
+  cacheTtl: 60
+  apiBase: https://api.example.com
+  featureToggle: enabled
+
+# ConfigMap not rendered by this chart (shared platform config): references to
+# it stay on the original name and are only validated against the live input.
+externalConfigMap: platform-shared-config
+optionalConfigMap: payment-web-optional-flags

@@ -1,0 +1,98 @@
+# The Deployment currently running in namespace "platform" (hand-submitted
+# manifest; in real life this comes from `kubectl get deploy -o yaml`).
+# Its selector is identical to what the v3 chart renders, so the rehearsal
+# accepts it. The image still runs the old version.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-rel-payment-web
+  namespace: platform
+  labels:
+    helm.sh/chart: payment-web-2.0.0
+    app.kubernetes.io/name: payment-web
+    app.kubernetes.io/instance: platform-rel
+    app.kubernetes.io/version: "4.0.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    checksum/legacy: fixed-2026-11-23
+  resourceVersion: "1234567"
+  uid: 11111111-2222-3333-4444-555555555555
+  generation: 7
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: payment-web
+      app.kubernetes.io/instance: platform-rel
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: payment-web
+        app.kubernetes.io/instance: platform-rel
+      annotations:
+        checksum/legacy: fixed-2026-11-23
+    spec:
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+      nodeSelector:
+        disktype: hdd
+      initContainers:
+        - name: config-bootstrap
+          image: "registry.local/frontend/payment-web:3.0.7-patch.2"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-c", "echo bootstrap"]
+          envFrom:
+            - configMapRef:
+                name: platform-rel-payment-web-config
+      containers:
+        - name: payment-web
+          image: "registry.local/frontend/payment-web:3.0.7-patch.2"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 300m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          env:
+            - name: CACHE_TTL
+              value: "60"
+            - name: API_BASE
+              value: "https://api.example.com"
+            - name: CHART_MAJOR
+              value: "2"
+          envFrom:
+            - configMapRef:
+                name: platform-rel-payment-web-config
+            # External, chart does not render it: must be kept as-is.
+            - configMapRef:
+                name: platform-shared-config
+            - configMapRef:
+                name: payment-web-optional-flags
+                optional: true
+          volumeMounts:
+            - name: app-config-volume
+              mountPath: /etc/app-config
+              readOnly: true
+            - name: feature-flags
+              mountPath: /etc/feature-flags
+              readOnly: true
+      volumes:
+        - name: app-config-volume
+          configMap:
+            name: platform-rel-payment-web-config
+            items:
+              - key: cacheTtl
+                path: cache-ttl.conf
+              - key: apiBase
+                path: api-base.conf
+        - name: feature-flags
+          configMap:
+            name: payment-web-optional-flags
+            optional: true

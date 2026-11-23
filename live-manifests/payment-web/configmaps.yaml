@@ -1,0 +1,26 @@
+# ConfigMaps currently present in namespace "platform" (same namespace as the
+# Deployment). Submitted as context only: the rehearsal never mutates them.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-rel-payment-web-config
+  namespace: platform
+  labels:
+    app.kubernetes.io/name: payment-web
+    app.kubernetes.io/instance: platform-rel
+data:
+  # Old content: v3 changes cacheTtl/apiBase and adds featureToggle, so an
+  # immutable copy is required instead of an in-place update.
+  cacheTtl: "60"
+  apiBase: https://api.example.com
+---
+# External (shared platform) ConfigMap. The v3 chart does not render anything
+# under this name, so the reference stays exactly as-is.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-shared-config
+  namespace: platform
+data:
+  region: cn-north-1
+  endpoint: https://shared.example.com

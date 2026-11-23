@@ -1,0 +1,21 @@
+{{- define "payment-web.configmap.name" -}}
+{{- if .Values.configMap.name -}}
+{{- .Values.configMap.name -}}
+{{- else -}}
+{{- printf "%s-%s-config" .Release.Name (include "payment-web.name" .) -}}
+{{- end -}}
+{{- end -}}
+{{- if .Values.configMap.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "payment-web.configmap.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "payment-web.labels" . | nindent 4 }}
+data:
+  cacheTtl: {{ .Values.config.cacheTtl | quote }}
+  apiBase: {{ .Values.config.apiBase | quote }}
+  # v3 addition: a brand-new key; any same-name live ConfigMap lacks it.
+  featureToggle: {{ .Values.config.featureToggle | quote }}
+{{- end }}
